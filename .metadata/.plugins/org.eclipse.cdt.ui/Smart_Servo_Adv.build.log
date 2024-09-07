@@ -1,0 +1,17 @@
+22:21:33 **** Incremental Build of configuration Debug for project Smart_Servo_Adv ****
+make -j8 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32F446xx -c -I../Core/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../Drivers/CMSIS/Include -Og -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+arm-none-eabi-gcc -o "Smart_Servo_Adv.elf" @"objects.list"   -mcpu=cortex-m4 -T"/mnt/Storage/Projects/AxelFlow/examples/Smart_Servo_Adv/STM32F446RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Smart_Servo_Adv.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Finished building target: Smart_Servo_Adv.elf
+ 
+arm-none-eabi-size  Smart_Servo_Adv.elf 
+arm-none-eabi-objdump -h -S Smart_Servo_Adv.elf  > "Smart_Servo_Adv.list"
+   text	   data	    bss	    dec	    hex	filename
+   9008	    100	   2044	  11152	   2b90	Smart_Servo_Adv.elf
+Finished building: default.size.stdout
+ 
+Finished building: Smart_Servo_Adv.list
+ 
+
+22:21:35 Build Finished. 0 errors, 0 warnings. (took 1s.471ms)
+

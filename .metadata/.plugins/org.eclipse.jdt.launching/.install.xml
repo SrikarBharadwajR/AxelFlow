@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<dirs>
+    <entry loc="/usr/lib/jvm/jre-1.8-oracle-x86" stamp="1718623696998"/>
+    <entry loc="/opt/st/stm32cubeide_1.14.0/plugins/com.st.stm32cube.ide.jre.linux64_3.1.0.202310310920/jre" stamp="1705672652292"/>
+    <entry loc="/usr/lib/jvm/java-21-openjdk-21.0.4.0.7-2.fc40.x86_64" stamp="1721755956278"/>
+    <entry loc="/usr/lib/jvm/java-17-openjdk-17.0.12.0.7-2.fc40.x86_64" stamp="1721755958629"/>
+    <entry loc="/usr/lib/jvm/java-22-openjdk-22.0.2.0.9-1.rolling.fc40.x86_64" stamp="1722412263090"/>
+    <entry loc="/opt/st/stm32cubeide_1.14.0/plugins/com.st.stm32cube.ide.jre.linux64_3.1.0.202310310920" stamp="1705672652292"/>
+</dirs>
