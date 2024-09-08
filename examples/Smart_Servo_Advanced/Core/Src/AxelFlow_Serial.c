@@ -7,9 +7,7 @@
  * to isolate the UART code for Microcontroller cross compabilities.
  */
 // TODO Communication via Pointers
-
 //#define DEBUG_PRINT_COMMUNICATION
-
 uint8_t info_array[INSTRUCTION_FRAME_BUFFER];
 
 void struct_to_arr(Instruction_Packet packet)
@@ -53,6 +51,9 @@ Status_Packet arr_to_struct(uint8_t array[])
 Status_Packet AxelFlow_fire(UART_HandleTypeDef *huart, Instruction_Packet ip)
 {
 	HAL_StatusTypeDef err1, err2;
+#ifndef DEBUG_PRINT_COMMUNICATION
+	(void) err1, (void) err2; // silence warnings
+#endif
 	uint8_t Status_array[STATUS_FRAME_BUFFER];
 	memset(Status_array, 0, STATUS_FRAME_BUFFER);
 	struct_to_arr(ip);

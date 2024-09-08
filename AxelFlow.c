@@ -6,6 +6,8 @@
  */
 #include "AxelFlow.h"
 
+#define DEBUG_PRINT_STATUS
+
 //extern uint8_t rx_data[Rx_DATA_SIZE];
 //extern volatile uint8_t received;
 //
@@ -238,14 +240,46 @@
 //	transmitToServo(packet);
 //}
 
-/* Functions to be written:
- * IMPORTANT
- * Set torque
- *
- *
- *
+#ifdef DEBUG_PRINT_STATUS
+void print_status(Status_Packet packet)
+{
+	char temp[150] = { '\0' };
+	sprintf(temp, "Header 1:  0x%02X", packet.Header_1);
+	AxelFlow_debug_println(temp);
+	sprintf(temp, "Header 2:  0x%02X", packet.Header_2);
+	AxelFlow_debug_println(temp);
+	sprintf(temp, "Packet ID: 0x%02X", packet.Packet_ID);
+	AxelFlow_debug_println(temp);
+	sprintf(temp, "Length:    0x%02X", packet.Length);
+	AxelFlow_debug_println(temp);
+	char error[100] = { '\0' };
+	if (packet.Error & (1 << Input_Voltage_Error))
+		strcat(error, "Input Voltage Error\t");
+	if (packet.Error & (1 << Angle_Limit_Error))
+		strcat(error, "Angle Limit Error\t");
+	if (packet.Error & (1 << Overheating_Error))
+		strcat(error, "Overheating Error\t");
+	if (packet.Error & (1 << Range_Error))
+		strcat(error, "Range Error\t");
+	if (packet.Error & (1 << Checksum_Error))
+		strcat(error, "Checksum Error\t");
+	if (packet.Error & (1 << Overload_Error))
+		strcat(error, "Overload Error\t");
+	if (packet.Error & (1 << Instruction_Error))
+		strcat(error, "Instruction Error\t");
+	sprintf(temp, "Error:    %s(0x%02X)", error, packet.Error);
+	AxelFlow_debug_println(temp);
+	AxelFlow_debug_print("Param:\t");
+	for (uint8_t i = 0; i < packet.Length - 2; i++)
+	{
+		sprintf(temp, "0x%02X\t", packet.Param[i]);
+		AxelFlow_debug_print(temp);
+	}
+	AxelFlow_debug_println("");
+	sprintf(temp, "Checksum:  0x%02X", packet.Checksum);
+	AxelFlow_debug_println(temp);
+	AxelFlow_debug_println("");
 
-
-
- */
+}
+#endif
 

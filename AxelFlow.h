@@ -12,7 +12,9 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
-#include <stm32f0xx_hal_uart.h>
+#include "AxelFlow_Debug.h"
+//#include <stm32f0xx_hal_uart.h>
+//#include "stm32f0xx_hal.h"
 
 //#########################################################################
 //################ define - Dynamixel Hex code table ######################
@@ -134,6 +136,48 @@
 #define STATUS_FRAME_BUFFER             10
 #define INSTRUCTION_FRAME_BUFFER        15
 
+typedef struct
+{
+	uint8_t Header_1;
+	uint8_t Header_2;
+	uint8_t Packet_ID;
+	uint8_t Length;
+	uint8_t Instruction;
+	uint8_t *Param;
+	uint8_t Checksum;
+} Instruction_Packet;
+
+typedef struct
+{
+	uint8_t Header_1;
+	uint8_t Header_2;
+	uint8_t Packet_ID;
+	uint8_t Length;
+	uint8_t Error;
+	uint8_t *Param;
+	uint8_t Checksum;
+} Status_Packet;
+
+typedef enum
+{
+	Input_Voltage_Error = 0x01,
+	Angle_Limit_Error,
+	Overheating_Error,
+	Range_Error,
+	Checksum_Error,
+	Overload_Error,
+	Instruction_Error,
+} Status_Error;
+//typedef struct
+//{
+//	uint8_t Input_Voltage_Error = 0x00;
+//	uint8_t Angle_Limit_Error = 0x01;
+//	uint8_t Overheating_Error = 0x02;
+//	uint8_t Range_Error = 0x03;
+//	uint8_t Checksum_Error = 0x04;
+//	uint8_t Overload_Error = 0x05;
+//	uint8_t Instruction_Error = 0x06;
+//} Status_Error;
 void begin(long);
 void end(void);
 
@@ -178,39 +222,6 @@ unsigned int ledState(unsigned char, bool);
 void transmitInstructionPacket(void);
 unsigned int readStatusPacket(void);
 void clearRXbuffer(void);
-
-
-typedef struct
-{
-	uint8_t Header_1;
-	uint8_t Header_2;
-	uint8_t Packet_ID;
-	uint8_t Length;
-	uint8_t Instruction;
-	uint8_t *Param;
-	uint8_t Checksum;
-} Instruction_Packet;
-
-typedef struct
-{
-	uint8_t Header_1;
-	uint8_t Header_2;
-	uint8_t Packet_ID;
-	uint8_t Length;
-	uint8_t Error;
-	uint8_t *Param;
-	uint8_t Checksum;
-} Status_Packet;
-
-typedef enum
-{
-	Input_Voltage_Error = 0x00,
-	Angle_Limit_Error,
-	Overheating_Error,
-	Range_Error,
-	Checksum_Error,
-	Overload_Error,
-	Instruction_Error,
-} Status_Error;
+void print_status(Status_Packet packet);
 
 #endif /* AXELFLOW_H */

@@ -2,6 +2,8 @@
 #define AXELFLOW_SERIAL_H
 
 #include "AxelFlow.h"
+#include "stm32f0xx_hal.h"
+#include "AxelFlow_Debug.h"
 //typedef struct
 //{
 //	uint8_t Header_1;
@@ -15,7 +17,7 @@
 
 Status_Packet AxelFlow_fire(UART_HandleTypeDef *huart,
 		Instruction_Packet ip);
-Status_Packet arr_to_struct(uint8_t array);
+Status_Packet arr_to_struct(uint8_t array[]);
 void struct_to_arr(Instruction_Packet packet);
 
 #endif
