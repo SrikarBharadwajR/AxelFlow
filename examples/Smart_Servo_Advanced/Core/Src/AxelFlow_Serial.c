@@ -10,6 +10,42 @@
 //#define DEBUG_PRINT_COMMUNICATION
 uint8_t info_array[INSTRUCTION_FRAME_BUFFER];
 
+UART_HandleTypeDef AxelFlow_UART_Init(USART_TypeDef *UART_ID,
+		uint32_t baud_rate)
+{
+	UART_HandleTypeDef huartx;
+	huartx.Instance = UART_ID;
+	huartx.Init.BaudRate = baud_rate;
+	huartx.Init.WordLength = UART_WORDLENGTH_8B;
+	huartx.Init.StopBits = UART_STOPBITS_1;
+	huartx.Init.Parity = UART_PARITY_NONE;
+	huartx.Init.Mode = UART_MODE_TX_RX;
+	huartx.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+	huartx.Init.OverSampling = UART_OVERSAMPLING_16;
+	huartx.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+	huartx.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+
+	if (HAL_HalfDuplex_Init(&huartx) != HAL_OK)
+	{
+		__disable_irq();
+		while (1)
+		{
+		}
+	}
+	return huartx;
+}
+
+uint8_t getChecksum(Instruction_Packet packet)
+{
+	uint8_t sum = packet.Packet_ID + packet.Length + packet.Instruction;
+
+	for (uint8_t i = 0; i < packet.Length - 2; i++)
+	{
+		sum += packet.Param[i];
+	}
+	return ~sum;
+}
+
 void struct_to_arr(Instruction_Packet packet)
 {
 	info_array[0] = HEADER;
@@ -21,7 +57,7 @@ void struct_to_arr(Instruction_Packet packet)
 	for (uint8_t i = 5; i < packet.Length + 3; i++)
 		info_array[i] = packet.Param[i - 5];
 
-	info_array[packet.Length + 3] = packet.Checksum;
+	info_array[packet.Length + 3] = getChecksum(packet);
 
 	for (uint8_t i = packet.Length + 4; i <= INSTRUCTION_FRAME_BUFFER; i++)
 	{
@@ -93,9 +129,4 @@ Status_Packet AxelFlow_fire(UART_HandleTypeDef *huart, Instruction_Packet ip)
 	}
 #endif
 	return packet;
-
-	// TODO clean out received data.
 }
-
-// Take inputs such as uart handle, instruction packet
-// returns success

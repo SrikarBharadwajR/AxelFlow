@@ -53,8 +53,8 @@ UART_HandleTypeDef huart2;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_USART1_UART_Init(void);
 static void MX_USART2_UART_Init(void);
+static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -92,8 +92,8 @@ int main(void)
 
 	/* Initialize all configured peripherals */
 	MX_GPIO_Init();
-	MX_USART1_UART_Init();
 	MX_USART2_UART_Init();
+	MX_USART1_UART_Init();
 	/* USER CODE BEGIN 2 */
 	/* TODO: THINGS TO KEEP OUT OF MAIN CODE
 	 * 	 - UART code
@@ -101,17 +101,11 @@ int main(void)
 	 * 	 - Compliance Slope Code
 	 *
 	 * TODO 2:
-	 * - Multiple UART Compatible
-	 *  - To ping
-	 *  - To get current ID, model and firmware
-	 *  - To set baudrate and ID
-	 *  - To set angle and speed
 	 *  - To set max torque
-	 *  - Enable LED when gripping
 	 *  - Set operating voltage to 12v
 	 *  - To scan baudrate and ID
-	 *
-	 *
+	 *	- Sync Write
+	 *	- Bulk Read
 	 *
 	 * */
 
@@ -119,34 +113,55 @@ int main(void)
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
-	HAL_Delay(200);
-//	uint8_t send_data[] = { 0xFF, 0xFF, 0x01, 0x07, 0x03, 0x1E, 0x00, 0x01,
-//			0x2C, 0x01, 0xA8 };
-	uint8_t send_data[] = { 0x1E, 0x00, 0x01, 0x2C, 0x01 };
-//	uint8_t send_data[] = { 0x00, 0x03 };
-
 	AxelFlow_debug_init(&huart2);
+//	Servo servo1 = AxelFlow_servo_init(0x01, &huart1);
 
-	Instruction_Packet ip;
-	ip.Header_1 = 0xFF;
-	ip.Header_2 = 0xFF;
-	ip.Packet_ID = 0x01;
-	ip.Length = 0x07;
-	ip.Instruction = 0x03;
-	ip.Param = send_data;
-	ip.Checksum = 0xA8;
+	UART_HandleTypeDef servo1_UART_Handle = AxelFlow_UART_Init(USART1, 1E6); // Make sure that interrupt is selected.
+	Servo servo1 = AxelFlow_servo_init(0x01, &servo1_UART_Handle);
 
-	Status_Packet p = AxelFlow_fire(&huart1, ip);
-	print_status(p);
+	Status_Packet status;
+//	uint32_t new_baud = 1000000;
+//	status = changeBaudRate(new_baud, servo1);
+//	print_status(status);
+//	status = setCWLimit(0.0, 1, huart1);
+//	print_status(status);
+//	status = setCCWLimit(300.0, 1, huart1);
+//	print_status(status);
 
-
-	HAL_Delay(10);
+//	HAL_Delay(10);
 	while (1)
 	{
-//		Status_Packet p = AxelFlow_fire(&huart1, ip);
-//		print_status(p);
-
-		HAL_Delay(10);
+//		controlLED(1, 1, huart1);
+//		HAL_Delay(10);
+//		do
+//		{
+//		status = setPosition(0.0, servo1);
+		status = setPosition(2.0, servo1);
+//		} while (status.Header_2 != HEADER);
+		print_status(status, 0);
+		HAL_Delay(100);
+//
+//		controlLED(0, 1, huart1);
+//		HAL_Delay(10);
+//		do
+//		{
+		status = setPosition(55.0, servo1);
+//		} while (status.Header_2 != HEADER);
+//		print_status(status);
+		char ch[10];
+		sprintf(ch, "%u\n\r", getFirmwareVersion(servo1));
+		AxelFlow_debug_println(ch);
+//		do
+//		{
+//			status = getPosition(1, huart1);
+//		} while (status.Header_2 != HEADER);
+//
+//		float pos = dataToDegrees(status.Param);
+//
+//		char ch[30];
+//		sprintf(ch, "Angle in degrees: %f", pos);
+//		AxelFlow_debug_println(ch);
+		HAL_Delay(100);
 
 		/* USER CODE END WHILE */
 
@@ -216,7 +231,7 @@ static void MX_USART1_UART_Init(void)
 
 	/* USER CODE END USART1_Init 1 */
 	huart1.Instance = USART1;
-	huart1.Init.BaudRate = 115200;
+	huart1.Init.BaudRate = 38400;
 	huart1.Init.WordLength = UART_WORDLENGTH_8B;
 	huart1.Init.StopBits = UART_STOPBITS_1;
 	huart1.Init.Parity = UART_PARITY_NONE;
@@ -225,7 +240,7 @@ static void MX_USART1_UART_Init(void)
 	huart1.Init.OverSampling = UART_OVERSAMPLING_16;
 	huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
 	huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-	if (HAL_HalfDuplex_Init(&huart1) != HAL_OK)
+	if (HAL_UART_Init(&huart1) != HAL_OK)
 	{
 		Error_Handler();
 	}

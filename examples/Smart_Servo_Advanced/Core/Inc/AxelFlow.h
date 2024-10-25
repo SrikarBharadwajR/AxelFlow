@@ -12,7 +12,9 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "AxelFlow_Debug.h"
+#include "AxelFlow_Serial.h"
 //#include <stm32f0xx_hal_uart.h>
 //#include "stm32f0xx_hal.h"
 
@@ -71,6 +73,7 @@
 #define COMMAND_REG_WRITE_DATA          0x04
 #define COMMAND_ACTION                  0x05
 #define COMMAND_RESET                   0x06
+#define COMMAND_REBOOT					0x08
 #define COMMAND_SYNC_WRITE              0x83
 
 //#########################################################################
@@ -130,37 +133,15 @@
 
 #define BROADCAST_ID                    0xFE
 
-#define HEADER                          0xFF
-
-#define STATUS_PACKET_TIMEOUT           50      // in millis()
-#define STATUS_FRAME_BUFFER             10
-#define INSTRUCTION_FRAME_BUFFER        15
-
 typedef struct
 {
-	uint8_t Header_1;
-	uint8_t Header_2;
-	uint8_t Packet_ID;
-	uint8_t Length;
-	uint8_t Instruction;
-	uint8_t *Param;
-	uint8_t Checksum;
-} Instruction_Packet;
-
-typedef struct
-{
-	uint8_t Header_1;
-	uint8_t Header_2;
-	uint8_t Packet_ID;
-	uint8_t Length;
-	uint8_t Error;
-	uint8_t *Param;
-	uint8_t Checksum;
-} Status_Packet;
+	uint8_t id;
+	UART_HandleTypeDef huartx;
+} Servo;
 
 typedef enum
 {
-	Input_Voltage_Error = 0x01,
+	Input_Voltage_Error = 0x00,
 	Angle_Limit_Error,
 	Overheating_Error,
 	Range_Error,
@@ -168,60 +149,66 @@ typedef enum
 	Overload_Error,
 	Instruction_Error,
 } Status_Error;
-//typedef struct
-//{
-//	uint8_t Input_Voltage_Error = 0x00;
-//	uint8_t Angle_Limit_Error = 0x01;
-//	uint8_t Overheating_Error = 0x02;
-//	uint8_t Range_Error = 0x03;
-//	uint8_t Checksum_Error = 0x04;
-//	uint8_t Overload_Error = 0x05;
-//	uint8_t Instruction_Error = 0x06;
-//} Status_Error;
-void begin(long);
-void end(void);
+typedef enum
+{
+	BAUD_9600 = 0xCF,      // Margin of Error = -0.160%
+	BAUD_19200 = 0x67, 	   // Margin of Error = -0.160%
+	BAUD_57600 = 0x22, 	   // Margin of Error = 0.794%
+	BAUD_115200 = 0x10,    // Margin of Error = -2.124%
+	BAUD_200000 = 0x09,    // Margin of Error = 0.000%
+	BAUD_250000 = 0x07,    // Margin of Error = 0.000%
+	BAUD_400000 = 0x04,    // Margin of Error = 0.000%
+	BAUD_500000 = 0x03,    // Margin of Error = 0.000%
+	BAUD_DEFAULT = 0x01    // Margin of Error = 0.000% (default)
+} BaudRate;
 
-void setDirectionPin(unsigned char);
-unsigned int reset(unsigned char);
-unsigned int ping(unsigned char);
+//TODO: CLean this up
 
 unsigned int setStatusPaketReturnDelay(unsigned char, unsigned char);
 unsigned int setID(unsigned char, unsigned char);
 unsigned int setBaudRate(unsigned char, long);
-unsigned int setMaxTorque(unsigned char, int);
 unsigned int setHoldingTorque(unsigned char, bool);
 unsigned int setAlarmShutdown(unsigned char, unsigned char);
-unsigned int setStatusPaket(unsigned char, unsigned char);
 unsigned int setMode(unsigned char, bool, unsigned int, unsigned int);
 unsigned int setPunch(unsigned char, unsigned int);
 unsigned int setPID(unsigned char, unsigned char, unsigned char, unsigned char);
 unsigned int setTemp(unsigned char, unsigned char);
 unsigned int setVoltage(unsigned char, unsigned char, unsigned char);
 
-unsigned int servo(unsigned char, unsigned int, unsigned int);
-unsigned int servoPreload(unsigned char, unsigned int, unsigned int);
 unsigned int wheel(unsigned char, bool, unsigned int);
 void wheelSync(unsigned char, bool, unsigned int, unsigned char, bool,
 		unsigned int, unsigned char, bool, unsigned int);
 unsigned int wheelPreload(unsigned char, bool, unsigned int);
 
-unsigned int action(unsigned char);
-
 unsigned int readTemperature(unsigned char);
 unsigned int readVoltage(unsigned char);
-unsigned int readPosition(unsigned char);
 unsigned int readLoad(unsigned char);
 unsigned int readSpeed(unsigned char);
-
 unsigned int checkRegister(unsigned char);
 unsigned int checkMovement(unsigned char);
 unsigned int checkLock(unsigned char);
-
-unsigned int ledState(unsigned char, bool);
-
 void transmitInstructionPacket(void);
 unsigned int readStatusPacket(void);
-void clearRXbuffer(void);
-void print_status(Status_Packet packet);
+
+Servo AxelFlow_servo_init(uint8_t id, UART_HandleTypeDef *huartx);
+bool ping(Servo servo);
+uint8_t getFirmwareVersion(Servo servo);
+void print_status(Status_Packet packet, bool just_Errors);
+bool checkChecksum(Status_Packet packet);
+uint8_t* degreesToData(float degrees);
+Status_Packet setCCWLimit(float max_angle, Servo servo);
+Status_Packet setCWLimit(float max_angle, Servo servo);
+void pack_packet(void);
+Status_Packet setMaxTorque(float torque, Servo servo); // torque 0 to 100%
+Status_Packet setRunningTorque(float torque, Servo servo);	// torque 0 to 100%
+Status_Packet setPosition(float angle, Servo servo);
+Status_Packet controlLED(bool state, Servo servo);
+float dataToDegrees(uint8_t *Param);
+Status_Packet getPosition(Servo servo);
+Status_Packet changeServoID(uint8_t future_ID, Servo servo);
+Status_Packet changeBaudRate(uint32_t new_Baud_Rate, Servo servo);
+Status_Packet forceSetPosition(uint16_t angle, Servo servo1);
+float getPositionAngle(Servo servo);
+BaudRate getBaudRate(int new_Baud_Rate);
 
 #endif /* AXELFLOW_H */
