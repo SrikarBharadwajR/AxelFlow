@@ -24,14 +24,14 @@ UART_HandleTypeDef AxelFlow_UART_Init(USART_TypeDef *UART_ID,
 	huartx.Init.OverSampling = UART_OVERSAMPLING_16;
 	huartx.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
 	huartx.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-
-	if (HAL_HalfDuplex_Init(&huartx) != HAL_OK)
-	{
-		__disable_irq();
-		while (1)
-		{
-		}
-	}
+	HAL_HalfDuplex_Init(&huartx);
+//	if ()
+//	{
+//		__disable_irq();
+//		while (1)
+//		{
+//		}
+//	}
 	return huartx;
 }
 

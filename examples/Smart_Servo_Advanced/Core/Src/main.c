@@ -99,6 +99,10 @@ int main(void)
 	 * 	 - UART code
 	 * 	 - Debug Printing
 	 * 	 - Compliance Slope Code
+	 * 	 	- 	CW Compliance Margin
+	 * 	 	- 	CCW Compliance Margin
+	 * 	 	- 	CW Compliance Slope
+	 * 	 	- 	CCW Compliance Slope
 	 *
 	 * TODO 2:
 	 *  - To set max torque
@@ -106,6 +110,10 @@ int main(void)
 	 *  - To scan baudrate and ID
 	 *	- Sync Write
 	 *	- Bulk Read
+	 *	- Moving Speed (Wheel Mode and Joint mode)
+	 *	- getSpeedRPM
+	 *	-
+	 *
 	 *
 	 * */
 
@@ -116,50 +124,27 @@ int main(void)
 	AxelFlow_debug_init(&huart2);
 //	Servo servo1 = AxelFlow_servo_init(0x01, &huart1);
 
-	UART_HandleTypeDef servo1_UART_Handle = AxelFlow_UART_Init(USART1, 1E6); // Make sure that interrupt is selected.
-	Servo servo1 = AxelFlow_servo_init(0x01, &servo1_UART_Handle);
+	UART_HandleTypeDef servo1_UART_Handle = AxelFlow_UART_Init(USART1, 115200); // Make sure that interrupt is selected.
+	Servo servo1 = AxelFlow_servo_init(0x05, &servo1_UART_Handle, true);
 
 	Status_Packet status;
-//	uint32_t new_baud = 1000000;
-//	status = changeBaudRate(new_baud, servo1);
-//	print_status(status);
-//	status = setCWLimit(0.0, 1, huart1);
-//	print_status(status);
-//	status = setCCWLimit(300.0, 1, huart1);
-//	print_status(status);
+//	Status_Packet set_status = setCCWLimit(300, servo1);
+//	print_status(set_status, 0);
+//	set_status = setCWLimit(5, servo1);
+//	print_status(set_status, 0);
 
 //	HAL_Delay(10);
 	while (1)
 	{
-//		controlLED(1, 1, huart1);
-//		HAL_Delay(10);
 //		do
 //		{
-//		status = setPosition(0.0, servo1);
-		status = setPosition(2.0, servo1);
-//		} while (status.Header_2 != HEADER);
+		status = forceSetPosition(15.0, servo1);
 		print_status(status, 0);
 		HAL_Delay(100);
-//
-//		controlLED(0, 1, huart1);
-//		HAL_Delay(10);
-//		do
-//		{
-		status = setPosition(55.0, servo1);
-//		} while (status.Header_2 != HEADER);
-//		print_status(status);
-		char ch[10];
-		sprintf(ch, "%u\n\r", getFirmwareVersion(servo1));
-		AxelFlow_debug_println(ch);
-//		do
-//		{
-//			status = getPosition(1, huart1);
-//		} while (status.Header_2 != HEADER);
-//
-//		float pos = dataToDegrees(status.Param);
-//
-//		char ch[30];
-//		sprintf(ch, "Angle in degrees: %f", pos);
+		status = forceSetPosition(205.0, servo1);
+		print_status(status, 0);
+//		char ch[20];
+//		sprintf(ch, "%u\n\r", scanID(servo1));
 //		AxelFlow_debug_println(ch);
 		HAL_Delay(100);
 
