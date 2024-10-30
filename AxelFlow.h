@@ -12,7 +12,9 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "AxelFlow_Debug.h"
+#include "AxelFlow_Serial.h"
 //#include <stm32f0xx_hal_uart.h>
 //#include "stm32f0xx_hal.h"
 
@@ -31,7 +33,7 @@
 #define EEPROM_CCW_ANGLE_LIMIT_H        0x09
 #define EEPROM_LIMIT_TEMPERATURE        0x0B
 #define EEPROM_LOW_LIMIT_VOLTAGE        0x0C
-#define EEPROM_HIGN_LIMIT_VOLTAGE       0x0D
+#define EEPROM_HIGH_LIMIT_VOLTAGE       0x0D
 #define EEPROM_MAX_TORQUE_L             0x0E
 #define EEPROM_MAX_TORQUE_H             0x0F
 #define EEPROM_RETURN_LEVEL             0x10
@@ -71,6 +73,7 @@
 #define COMMAND_REG_WRITE_DATA          0x04
 #define COMMAND_ACTION                  0x05
 #define COMMAND_RESET                   0x06
+#define COMMAND_REBOOT					0x08
 #define COMMAND_SYNC_WRITE              0x83
 
 //#########################################################################
@@ -129,38 +132,24 @@
 #define ALL                             0x02
 
 #define BROADCAST_ID                    0xFE
+#define ID_MIN 							0x00
+#define ID_MAX							0xFD
 
-#define HEADER                          0xFF
+#define MAX_JOINT_SPEED 				0x00
+#define CLOCKWISE_SWITCH				  -1
 
-#define STATUS_PACKET_TIMEOUT           50      // in millis()
-#define STATUS_FRAME_BUFFER             10
-#define INSTRUCTION_FRAME_BUFFER        15
 
-typedef struct
-{
-	uint8_t Header_1;
-	uint8_t Header_2;
-	uint8_t Packet_ID;
-	uint8_t Length;
-	uint8_t Instruction;
-	uint8_t *Param;
-	uint8_t Checksum;
-} Instruction_Packet;
 
 typedef struct
 {
-	uint8_t Header_1;
-	uint8_t Header_2;
-	uint8_t Packet_ID;
-	uint8_t Length;
-	uint8_t Error;
-	uint8_t *Param;
-	uint8_t Checksum;
-} Status_Packet;
+	uint8_t id;
+	UART_HandleTypeDef huartx;
+	bool jointMode;
+} Servo;
 
 typedef enum
 {
-	Input_Voltage_Error = 0x01,
+	Input_Voltage_Error = 0x00,
 	Angle_Limit_Error,
 	Overheating_Error,
 	Range_Error,
@@ -168,60 +157,91 @@ typedef enum
 	Overload_Error,
 	Instruction_Error,
 } Status_Error;
-//typedef struct
-//{
-//	uint8_t Input_Voltage_Error = 0x00;
-//	uint8_t Angle_Limit_Error = 0x01;
-//	uint8_t Overheating_Error = 0x02;
-//	uint8_t Range_Error = 0x03;
-//	uint8_t Checksum_Error = 0x04;
-//	uint8_t Overload_Error = 0x05;
-//	uint8_t Instruction_Error = 0x06;
-//} Status_Error;
-void begin(long);
-void end(void);
+typedef enum
+{
+	BAUD_9600 = 0xCF,      // Margin of Error = -0.160%
+	BAUD_19200 = 0x67, 	   // Margin of Error = -0.160%
+	BAUD_57600 = 0x22, 	   // Margin of Error = 0.794%
+	BAUD_115200 = 0x10,    // Margin of Error = -2.124%
+	BAUD_200000 = 0x09,    // Margin of Error = 0.000%
+	BAUD_250000 = 0x07,    // Margin of Error = 0.000%
+	BAUD_400000 = 0x04,    // Margin of Error = 0.000%
+	BAUD_500000 = 0x03,    // Margin of Error = 0.000%
+	BAUD_DEFAULT = 0x01    // Margin of Error = 0.000% (default)
+} BaudRate;
 
-void setDirectionPin(unsigned char);
-unsigned int reset(unsigned char);
-unsigned int ping(unsigned char);
+//TODO: CLean this up
 
 unsigned int setStatusPaketReturnDelay(unsigned char, unsigned char);
 unsigned int setID(unsigned char, unsigned char);
 unsigned int setBaudRate(unsigned char, long);
-unsigned int setMaxTorque(unsigned char, int);
 unsigned int setHoldingTorque(unsigned char, bool);
 unsigned int setAlarmShutdown(unsigned char, unsigned char);
-unsigned int setStatusPaket(unsigned char, unsigned char);
 unsigned int setMode(unsigned char, bool, unsigned int, unsigned int);
 unsigned int setPunch(unsigned char, unsigned int);
 unsigned int setPID(unsigned char, unsigned char, unsigned char, unsigned char);
 unsigned int setTemp(unsigned char, unsigned char);
 unsigned int setVoltage(unsigned char, unsigned char, unsigned char);
 
-unsigned int servo(unsigned char, unsigned int, unsigned int);
-unsigned int servoPreload(unsigned char, unsigned int, unsigned int);
 unsigned int wheel(unsigned char, bool, unsigned int);
 void wheelSync(unsigned char, bool, unsigned int, unsigned char, bool,
 		unsigned int, unsigned char, bool, unsigned int);
 unsigned int wheelPreload(unsigned char, bool, unsigned int);
 
-unsigned int action(unsigned char);
-
 unsigned int readTemperature(unsigned char);
 unsigned int readVoltage(unsigned char);
-unsigned int readPosition(unsigned char);
 unsigned int readLoad(unsigned char);
 unsigned int readSpeed(unsigned char);
-
 unsigned int checkRegister(unsigned char);
 unsigned int checkMovement(unsigned char);
 unsigned int checkLock(unsigned char);
-
-unsigned int ledState(unsigned char, bool);
-
 void transmitInstructionPacket(void);
 unsigned int readStatusPacket(void);
-void clearRXbuffer(void);
-void print_status(Status_Packet packet);
+
+Servo AxelFlow_servo_init(uint8_t id, UART_HandleTypeDef *huartx,
+		bool jointMode);
+bool ping(Servo servo);
+uint8_t getFirmwareVersion(Servo servo);
+void print_status(Status_Packet packet, bool just_Errors);
+bool checkChecksum(Status_Packet packet);
+uint8_t* degreesToData(float degrees);
+Status_Packet setCCWLimit(float max_angle, Servo servo);
+uint16_t getCCWLimit(Servo servo);
+uint16_t getCWLimit(Servo servo);
+Status_Packet setCWLimit(float max_angle, Servo servo);
+void pack_packet(void);
+Status_Packet setMaxTorque(float torque, Servo servo); // torque 0 to 100%
+Status_Packet setRunningTorque(float torque, Servo servo);	// torque 0 to 100%
+Status_Packet setPosition(float angle, Servo servo);
+Status_Packet controlLED(bool state, Servo servo);
+float dataToDegrees(uint8_t *Param);
+Status_Packet getPosition(Servo servo);
+Status_Packet changeServoID(uint8_t future_ID, Servo servo);
+Status_Packet changeBaudRate(uint32_t new_Baud_Rate, Servo servo);
+Status_Packet forceSetPosition(uint16_t angle, Servo servo1);
+float getPositionAngle(Servo servo);
+BaudRate getBaudRate(int new_Baud_Rate);
+uint32_t readBaudRate(Servo servo);
+uint8_t readID(Servo servo);
+uint8_t scanID(Servo servo);
+uint32_t scanBaudRate(Servo servo);
+uint16_t getResponseDelayTime(Servo servo);
+Status_Packet setResponseDelayTime(uint16_t response_time, Servo servo);//in micro Seconds
+uint8_t getLEDStatus(Servo servo);
+uint8_t getTemperatureLimit(Servo servo);
+Status_Packet setTemperatureLimit(float max_temp, Servo servo);
+Status_Packet setMinVoltageLimit(float min_voltage, Servo servo);
+uint8_t getMinVoltageLimit(Servo servo);
+Status_Packet setMaxVoltageLimit(float max_voltage, Servo servo);
+uint8_t getMaxVoltageLimit(Servo servo);
+float getMaxTorque(Servo servo);
+uint8_t getStatusReturnLevel(Servo servo);
+Status_Packet setStatusReturnLevel(uint8_t status, Servo servo);
+uint8_t getAlarmLEDStatus(Servo servo);
+Status_Packet setAlarmLEDStatus(uint8_t status, Servo servo);
+Status_Packet setShutdownStatus(uint8_t status, Servo servo);
+uint8_t getShutdownStatus(Servo servo);
+uint8_t getTorqueEnableStatus(Servo servo);
+Status_Packet setTorqueEnableStatus(bool enable, Servo servo);
 
 #endif /* AXELFLOW_H */
