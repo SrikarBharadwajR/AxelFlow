@@ -136,9 +136,7 @@
 #define ID_MAX							0xFD
 
 #define MAX_JOINT_SPEED 				0x00
-#define CLOCKWISE_SWITCH				  -1
-
-
+#define CLOCKWISE_SWITCH				  1
 
 typedef struct
 {
@@ -178,7 +176,6 @@ unsigned int setBaudRate(unsigned char, long);
 unsigned int setHoldingTorque(unsigned char, bool);
 unsigned int setAlarmShutdown(unsigned char, unsigned char);
 unsigned int setMode(unsigned char, bool, unsigned int, unsigned int);
-unsigned int setPunch(unsigned char, unsigned int);
 unsigned int setPID(unsigned char, unsigned char, unsigned char, unsigned char);
 unsigned int setTemp(unsigned char, unsigned char);
 unsigned int setVoltage(unsigned char, unsigned char, unsigned char);
@@ -243,5 +240,17 @@ Status_Packet setShutdownStatus(uint8_t status, Servo servo);
 uint8_t getShutdownStatus(Servo servo);
 uint8_t getTorqueEnableStatus(Servo servo);
 Status_Packet setTorqueEnableStatus(bool enable, Servo servo);
+Status_Packet setSpeed(float speed, Servo servo);
+void setWheelMode(Servo servo);
+float getPresentLoad(Servo servo);
+float getPresentVoltage(Servo servo);
+float getPresentTemperature(Servo servo);
+
+float getSpeedRPM(Servo servo);
+uint8_t getRegistered(Servo servo);
+uint8_t getMoving(Servo servo);
+uint8_t getLockStatus(Servo servo);
+float getPunch(Servo servo);
+Status_Packet setPunch(float punch, Servo servo);
 
 #endif /* AXELFLOW_H */

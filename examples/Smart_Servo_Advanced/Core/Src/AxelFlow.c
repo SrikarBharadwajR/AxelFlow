@@ -38,10 +38,17 @@ bool checkChecksum(Status_Packet packet)
 
 uint8_t* degreesToData(float degrees)
 {
-	uint8_t *data = (uint8_t*) malloc(2 * sizeof(uint8_t));
-	uint16_t degrees_Hex = degrees * 3.41; // 1023/300
-	data[0] = degrees_Hex;
-	data[1] = degrees_Hex >> 8;
+	static uint8_t data[2];
+
+	uint16_t degrees_Hex = (uint16_t)(degrees * 3.41f); // 1023/300
+	data[0] = (uint8_t) degrees_Hex;
+	data[1] = (uint8_t) degrees_Hex >> 8;
+	if (degrees == 0.0)
+	{
+		data[0] = 0;
+		data[1] = 0;
+	}
+
 	return data;
 }
 float dataToDegrees(uint8_t *Param)
@@ -51,7 +58,7 @@ float dataToDegrees(uint8_t *Param)
 
 uint16_t getCCWLimit(Servo servo)
 {
-	uint8_t param_array[1] = { EEPROM_CCW_ANGLE_LIMIT_L };
+	uint8_t param_array[2] = { EEPROM_CCW_ANGLE_LIMIT_L, ALL };
 	packet.Packet_ID = servo.id;
 	packet.Length = sizeof(param_array) + 2;
 	packet.Instruction = COMMAND_READ_DATA;
@@ -74,7 +81,7 @@ Status_Packet setCCWLimit(float max_angle, Servo servo)
 }
 uint16_t getCWLimit(Servo servo)
 {
-	uint8_t param_array[1] = { EEPROM_CW_ANGLE_LIMIT_L };
+	uint8_t param_array[2] = { EEPROM_CW_ANGLE_LIMIT_L, ALL };
 	packet.Packet_ID = servo.id;
 	packet.Length = sizeof(param_array) + 2;
 	packet.Instruction = COMMAND_READ_DATA;
@@ -117,8 +124,9 @@ Status_Packet setMaxTorque(float torque, Servo servo)	// torque 0 to 100%
 	return AxelFlow_fire(&servo.huartx, packet);
 }
 float getMaxTorque(Servo servo)
+
 {
-	uint8_t param_array[1] = { EEPROM_MAX_TORQUE_L };
+	uint8_t param_array[2] = { EEPROM_MAX_TORQUE_L, ALL };
 	packet.Packet_ID = servo.id;
 	packet.Length = sizeof(param_array) + 2;
 	packet.Instruction = COMMAND_READ_DATA;
@@ -143,7 +151,7 @@ Status_Packet setRunningTorque(float torque, Servo servo)	// torque 0 to 100%
 
 Status_Packet setSpeed(float speed, Servo servo)
 {
-	uint8_t *data = (uint8_t*) malloc(3 * sizeof(uint8_t));
+	static uint8_t data[2];
 	if (servo.jointMode)
 	{
 		data = (speed < 99) ? degreesToData(speed * 3) : 0; // 1023 / (100*3.41)
@@ -151,19 +159,21 @@ Status_Packet setSpeed(float speed, Servo servo)
 	else // TODO; Add switch
 	{
 		speed *= CLOCKWISE_SWITCH;
-		data = (speed >= 0 && speed <= 100) ? degreesToData(speed * 3) :
-				(speed < 0 && speed >= -100) ?
-						degreesToData((speed + 100) * 3) : 0;
+		data = (speed >= 0 && speed <= 100) ?
+				degreesToData(speed * 3.0) :
+				((speed < 0 && speed >= -100) ?
+						degreesToData((-speed + 100) * 3) : 0);
 	}
 	uint8_t param_array[3] = { RAM_GOAL_SPEED_L, data[0], data[1] };
 	packet.Packet_ID = servo.id;
 	packet.Length = sizeof(param_array) + 2;
 	packet.Instruction = COMMAND_WRITE_DATA;
+	packet.Param = param_array;
 	return AxelFlow_fire(&servo.huartx, packet);
 }
 Status_Packet setSpeedinRPM(float rpm, Servo servo)
 {
-	uint8_t *data = (uint8_t*) malloc(3 * sizeof(uint8_t));
+	static uint8_t data[2];
 	if (servo.jointMode)
 	{
 		data = (rpm < 114) ? degreesToData(rpm * 2.632) : 0; // 1023 / (114*3.41)
@@ -213,6 +223,7 @@ float getPositionAngle(Servo servo)
 	return dataToDegrees(status.Param);
 }
 Status_Packet getSpeed(Servo servo)
+
 {
 	uint8_t param_array[2] = { RAM_PRESENT_SPEED_L, ALL };
 	packet.Packet_ID = servo.id;
@@ -573,6 +584,137 @@ Status_Packet setTorqueEnableStatus(bool enable, Servo servo)
 	packet.Instruction = COMMAND_WRITE_DATA;
 	packet.Param = param_array;
 	return AxelFlow_fire(&servo.huartx, packet);
+}
+void setWheelMode(Servo servo)
+{
+
+	setCCWLimit(1, servo);
+	HAL_Delay(10);
+	setCWLimit(1, servo);
+
+}
+float getPresentLoad(Servo servo)
+{
+	uint8_t param_array[2] = { RAM_PRESENT_LOAD_L, ALL };
+	packet.Packet_ID = servo.id;
+	packet.Length = sizeof(param_array) + 2;
+	packet.Instruction = COMMAND_READ_DATA;
+	packet.Param = param_array;
+	Status_Packet status = AxelFlow_fire(&servo.huartx, packet);
+	if (status.Error == 0)
+	{
+		float load = dataToDegrees(status.Param) * 3.41;
+		load = (load < 1023) ?
+				load * (100.0 / 1023) : (load * (-100.0 / 1023) + 100.0);
+		return load;
+	}
+	else
+		return -1;
+}
+
+float getPresentTemperature(Servo servo)
+{
+	uint8_t param_array[1] = { RAM_PRESENT_TEMPERATURE };
+	packet.Packet_ID = servo.id;
+	packet.Length = sizeof(param_array) + 2;
+	packet.Instruction = COMMAND_READ_DATA;
+	packet.Param = param_array;
+	Status_Packet status = AxelFlow_fire(&servo.huartx, packet);
+	if (status.Error == 0)
+	{
+		return status.Param[0] * 1.0;
+	}
+	else
+		return -1;
+}
+
+float getPresentVoltage(Servo servo)
+{
+	uint8_t param_array[1] = { RAM_PRESENT_VOLTAGE };
+	packet.Packet_ID = servo.id;
+	packet.Length = sizeof(param_array) + 2;
+	packet.Instruction = COMMAND_READ_DATA;
+	packet.Param = param_array;
+	Status_Packet status = AxelFlow_fire(&servo.huartx, packet);
+	if (status.Error == 0)
+	{
+		return status.Param[0] / 10.0;
+	}
+	else
+		return -1;
+}
+
+uint8_t getRegistered(Servo servo)
+{
+	uint8_t param_array[1] = { RAM_REGISTER };
+	packet.Packet_ID = servo.id;
+	packet.Length = sizeof(param_array) + 2;
+	packet.Instruction = COMMAND_READ_DATA;
+	packet.Param = param_array;
+	Status_Packet status = AxelFlow_fire(&servo.huartx, packet);
+	if (status.Error == 0)
+		return status.Param[0];
+	else
+		return -1;
+
+}
+
+uint8_t getMoving(Servo servo)
+{
+	uint8_t param_array[1] = { RAM_MOVING };
+	packet.Packet_ID = servo.id;
+	packet.Length = sizeof(param_array) + 2;
+	packet.Instruction = COMMAND_READ_DATA;
+	packet.Param = param_array;
+	Status_Packet status = AxelFlow_fire(&servo.huartx, packet);
+	if (status.Error == 0)
+		return status.Param[0];
+	else
+		return -1;
+
+}
+uint8_t getLockStatus(Servo servo)
+{
+	uint8_t param_array[1] = { RAM_LOCK };
+	packet.Packet_ID = servo.id;
+	packet.Length = sizeof(param_array) + 2;
+	packet.Instruction = COMMAND_READ_DATA;
+	packet.Param = param_array;
+	Status_Packet status = AxelFlow_fire(&servo.huartx, packet);
+	if (status.Error == 0)
+		return status.Param[0];
+	else
+		return -1;
+
+}
+Status_Packet setPunch(float punch, Servo servo)
+{
+	static uint8_t data[2];
+	data = degreesToData(punch * 3.0);
+	uint8_t param_array[3] = { RAM_PUNCH_L, data[0], data[1] };
+	packet.Packet_ID = servo.id;
+	packet.Length = sizeof(param_array) + 2;
+	packet.Instruction = COMMAND_WRITE_DATA;
+	packet.Param = param_array;
+	return AxelFlow_fire(&servo.huartx, packet);
+}
+
+float getPunch(Servo servo)
+{
+	uint8_t param_array[2] = { RAM_PUNCH_L, RAM_PUNCH_H };
+	packet.Packet_ID = servo.id;
+	packet.Length = sizeof(param_array) + 2;
+	packet.Instruction = COMMAND_READ_DATA;
+	packet.Param = param_array;
+	Status_Packet status = AxelFlow_fire(&servo.huartx, packet);
+	if (status.Error == 0)
+	{
+		float data = dataToDegrees(status.Param) / 3.0;
+		return data;
+	}
+	else
+		return -1;
+
 }
 
 #ifdef DEBUG_PRINT_STATUS

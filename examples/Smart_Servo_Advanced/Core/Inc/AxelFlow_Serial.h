@@ -4,6 +4,8 @@
 //#include "AxelFlow.h"
 #include "stm32f0xx_hal.h"
 #include "AxelFlow_Debug.h"
+#include <string.h>
+
 //#include <stdio.h>
 #define HEADER                          0xFF
 

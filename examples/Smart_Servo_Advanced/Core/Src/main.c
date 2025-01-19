@@ -125,29 +125,28 @@ int main(void)
 //	Servo servo1 = AxelFlow_servo_init(0x01, &huart1);
 
 	UART_HandleTypeDef servo1_UART_Handle = AxelFlow_UART_Init(USART1, 115200); // Make sure that interrupt is selected.
-	Servo servo1 = AxelFlow_servo_init(0x05, &servo1_UART_Handle, true);
+	Servo servo1 = AxelFlow_servo_init(0x06, &servo1_UART_Handle, false);
 
 	Status_Packet status;
-//	Status_Packet set_status = setCCWLimit(300, servo1);
+//	Status_Packet set_status = setCCWLimit(100, servo1);
 //	print_status(set_status, 0);
-//	set_status = setCWLimit(5, servo1);
+//	set_status = setCWLimit(0, servo1);
 //	print_status(set_status, 0);
+//	setWheelMode(servo1);
 
-//	HAL_Delay(10);
+	HAL_Delay(10);
 	while (1)
 	{
-//		do
-//		{
-		status = forceSetPosition(15.0, servo1);
-		print_status(status, 0);
-		HAL_Delay(100);
-		status = forceSetPosition(205.0, servo1);
-		print_status(status, 0);
-//		char ch[20];
-//		sprintf(ch, "%u\n\r", scanID(servo1));
+//		status = setPunch(30.0, servo1);
+//		print_status(status, 0);
+//		HAL_Delay(100);
+//		char ch[40];
+//		sprintf(ch, "%f\n\r", getPresentLoad(servo1));
 //		AxelFlow_debug_println(ch);
-		HAL_Delay(100);
-
+		setPosition(10, servo1);
+		HAL_Delay(1);
+		setPosition(15, servo1);
+		HAL_Delay(1);
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */
@@ -216,7 +215,7 @@ static void MX_USART1_UART_Init(void)
 
 	/* USER CODE END USART1_Init 1 */
 	huart1.Instance = USART1;
-	huart1.Init.BaudRate = 38400;
+	huart1.Init.BaudRate = 1000000;
 	huart1.Init.WordLength = UART_WORDLENGTH_8B;
 	huart1.Init.StopBits = UART_STOPBITS_1;
 	huart1.Init.Parity = UART_PARITY_NONE;
@@ -225,7 +224,7 @@ static void MX_USART1_UART_Init(void)
 	huart1.Init.OverSampling = UART_OVERSAMPLING_16;
 	huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
 	huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-	if (HAL_UART_Init(&huart1) != HAL_OK)
+	if (HAL_HalfDuplex_Init(&huart1) != HAL_OK)
 	{
 		Error_Handler();
 	}
