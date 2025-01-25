@@ -11,7 +11,7 @@
 Instruction_Packet packet;
 
 Servo AxelFlow_servo_init(uint8_t id, UART_HandleTypeDef *huartx,
-		bool jointMode)
+bool jointMode)
 {
 	Servo servo;
 	servo.id = id;
@@ -39,10 +39,9 @@ bool checkChecksum(Status_Packet packet)
 uint8_t* degreesToData(float degrees)
 {
 	static uint8_t data[2];
-
-	uint16_t degrees_Hex = (uint16_t)(degrees * 3.41f); // 1023/300
-	data[0] = (uint8_t) degrees_Hex;
-	data[1] = (uint8_t) degrees_Hex >> 8;
+	uint16_t degrees_Hex = (uint16_t) (degrees * 3.41f); // 1023/300
+	data[0] = degrees_Hex;
+	data[1] = degrees_Hex >> 8;
 	if (degrees == 0.0)
 	{
 		data[0] = 0;
@@ -151,7 +150,7 @@ Status_Packet setRunningTorque(float torque, Servo servo)	// torque 0 to 100%
 
 Status_Packet setSpeed(float speed, Servo servo)
 {
-	static uint8_t data[2];
+	uint8_t *data;
 	if (servo.jointMode)
 	{
 		data = (speed < 99) ? degreesToData(speed * 3) : 0; // 1023 / (100*3.41)
@@ -173,10 +172,15 @@ Status_Packet setSpeed(float speed, Servo servo)
 }
 Status_Packet setSpeedinRPM(float rpm, Servo servo)
 {
-	static uint8_t data[2];
+	uint8_t *data;
+
 	if (servo.jointMode)
 	{
 		data = (rpm < 114) ? degreesToData(rpm * 2.632) : 0; // 1023 / (114*3.41)
+	}
+	else
+	{
+		data = NULL;
 	}
 	uint8_t param_array[3] = { RAM_GOAL_SPEED_L, data[0], data[1] };
 	packet.Packet_ID = servo.id;
@@ -323,7 +327,7 @@ uint32_t readBaudRate(Servo servo)
 	packet.Instruction = COMMAND_READ_DATA;
 	packet.Param = param_array;
 	Status_Packet status = AxelFlow_fire(&servo.huartx, packet);
-	switch ((uint8_t) * status.Param)
+	switch ((uint8_t) *status.Param)
 	{
 	case BAUD_9600:
 		return 9600;
@@ -439,8 +443,8 @@ uint8_t getTemperatureLimit(Servo servo)
 }
 Status_Packet setMinVoltageLimit(float min_voltage, Servo servo)
 {
-	uint8_t param_array[2] = { EEPROM_LOW_LIMIT_VOLTAGE, (uint8_t)(
-			min_voltage * 10) };
+	uint8_t param_array[2] = { EEPROM_LOW_LIMIT_VOLTAGE, (uint8_t) (min_voltage
+			* 10) };
 	packet.Packet_ID = servo.id;
 	packet.Length = sizeof(param_array) + 2;
 	packet.Instruction = COMMAND_WRITE_DATA;
@@ -463,8 +467,8 @@ uint8_t getMinVoltageLimit(Servo servo)
 }
 Status_Packet setMaxVoltageLimit(float max_voltage, Servo servo)
 {
-	uint8_t param_array[2] = { EEPROM_HIGH_LIMIT_VOLTAGE, (uint8_t)(
-			max_voltage * 10) };
+	uint8_t param_array[2] = { EEPROM_HIGH_LIMIT_VOLTAGE, (uint8_t) (max_voltage
+			* 10) };
 	packet.Packet_ID = servo.id;
 	packet.Length = sizeof(param_array) + 2;
 	packet.Instruction = COMMAND_WRITE_DATA;
@@ -689,8 +693,7 @@ uint8_t getLockStatus(Servo servo)
 }
 Status_Packet setPunch(float punch, Servo servo)
 {
-	static uint8_t data[2];
-	data = degreesToData(punch * 3.0);
+	uint8_t *data = degreesToData(punch * 3.0);
 	uint8_t param_array[3] = { RAM_PUNCH_L, data[0], data[1] };
 	packet.Packet_ID = servo.id;
 	packet.Length = sizeof(param_array) + 2;
