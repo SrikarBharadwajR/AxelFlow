@@ -155,7 +155,7 @@ Status_Packet setSpeed(float speed, Servo servo)
 	{
 		data = (speed < 99) ? degreesToData(speed * 3) : 0; // 1023 / (100*3.41)
 	}
-	else // TODO; Add switch
+	else // TODO; Add switch.
 	{
 		speed *= CLOCKWISE_SWITCH;
 		data = (speed >= 0 && speed <= 100) ?
