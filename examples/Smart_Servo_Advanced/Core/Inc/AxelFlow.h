@@ -1,5 +1,4 @@
 /*
- * TODO RM_Dynamixel_AX-12A.h
  *
  *  Created on: Apr 20, 2024
  *      Author: srikar
@@ -167,33 +166,6 @@ typedef enum
 	BAUD_500000 = 0x03,    // Margin of Error = 0.000%
 	BAUD_DEFAULT = 0x01    // Margin of Error = 0.000% (default)
 } BaudRate;
-
-//TODO: CLean this up
-
-unsigned int setStatusPaketReturnDelay(unsigned char, unsigned char);
-unsigned int setID(unsigned char, unsigned char);
-unsigned int setBaudRate(unsigned char, long);
-unsigned int setHoldingTorque(unsigned char, bool);
-unsigned int setAlarmShutdown(unsigned char, unsigned char);
-unsigned int setMode(unsigned char, bool, unsigned int, unsigned int);
-unsigned int setPID(unsigned char, unsigned char, unsigned char, unsigned char);
-unsigned int setTemp(unsigned char, unsigned char);
-unsigned int setVoltage(unsigned char, unsigned char, unsigned char);
-
-unsigned int wheel(unsigned char, bool, unsigned int);
-void wheelSync(unsigned char, bool, unsigned int, unsigned char, bool,
-		unsigned int, unsigned char, bool, unsigned int);
-unsigned int wheelPreload(unsigned char, bool, unsigned int);
-
-unsigned int readTemperature(unsigned char);
-unsigned int readVoltage(unsigned char);
-unsigned int readLoad(unsigned char);
-unsigned int readSpeed(unsigned char);
-unsigned int checkRegister(unsigned char);
-unsigned int checkMovement(unsigned char);
-unsigned int checkLock(unsigned char);
-void transmitInstructionPacket(void);
-unsigned int readStatusPacket(void);
 
 Servo AxelFlow_servo_init(uint8_t id, UART_HandleTypeDef *huartx,
 		bool jointMode);

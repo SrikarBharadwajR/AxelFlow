@@ -1,12 +1,8 @@
 #ifndef AXELFLOW_SERIAL_H
 #define AXELFLOW_SERIAL_H
 
-//#include "AxelFlow.h"
-#include "stm32f0xx_hal.h"
 #include "AxelFlow_Debug.h"
-#include <string.h>
 
-//#include <stdio.h>
 #define HEADER                          0xFF
 
 #define STATUS_PACKET_TIMEOUT           50      // in millis()
